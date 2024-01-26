@@ -16,7 +16,7 @@ class OutputTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.document = Document()
+        cls.document = Document(os.path.join(test_dir, 'test_template.docx'))
         cls.text1 = cls.get_html_from_file('text1.html')
         cls.table_html = cls.get_html_from_file('tables1.html')
         cls.table2_html = cls.get_html_from_file('tables2.html')
@@ -270,6 +270,27 @@ and blank lines.
             "<tr><td>One</td><td>Two</td></tr>"
             "</table>",
             self.document)
+
+    def test_custom_ul(self):
+        """Ensures that custom list styles are carried into the child parsers when rendering a table."""
+        custom_parser = HtmlToDocx(ul_style="List Bullet Diamond", ol_style="List Double Zero")
+
+        self.document.add_heading(
+            'Test: Handling Custom List Styles',
+            level=1
+        )
+        for snippet in [
+            # OL
+            "<ol><li>Item 1</li><li>Item 2</li></ol>",
+            "<p><ol><li>Item 1</li><li>Item 2</li></ol></p>",
+            "<table><tbody><tr><td><ol><li>Item 1</li><li>Item 2</li></ol></td></tr></tbody></table>",
+
+            # UL
+            "<ul><li>Item 1</li><li>Item 2</li></ul>",
+            "<p><ul><li>Item 1</li><li>Item 2</li></ul></p>",
+            "<p></p><table><tbody><tr><td><ul><li>Item 1</li><li>Item 2</li></ul></td></tr></tbody></table>"
+        ]:
+            custom_parser.add_html_to_document(snippet, self.document)
 
 
 if __name__ == '__main__':

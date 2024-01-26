@@ -25,13 +25,14 @@ from docx.enum.text import WD_COLOR, WD_ALIGN_PARAGRAPH
 from docx.image.image import Image
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.text.paragraph import Paragraph
 
 from bs4 import BeautifulSoup
 
 # values in inches
 INDENT = 0.25
 LIST_INDENT = 0.5
-MAX_INDENT = 5.5 # To stop indents going off the page
+MAX_INDENT = 5.5  # To stop indents going off the page
 
 # Style to use with tables. By default no style is used.
 DEFAULT_TABLE_STYLE = None
@@ -43,6 +44,7 @@ DEFAULT_PARAGRAPH_STYLE = None
 def get_filename_from_url(url):
     return os.path.basename(urlparse(url).path)
 
+
 def is_url(url):
     """
     Not to be used for actually validating a url, but in our use case we only 
@@ -50,6 +52,7 @@ def is_url(url):
     """
     parts = urlparse(url)
     return all([parts.scheme, parts.netloc, parts.path])
+
 
 def fetch_image(url):
     """
@@ -65,8 +68,10 @@ def fetch_image(url):
     except urllib.error.URLError:
         return None
 
+
 def remove_last_occurence(ls, x):
     ls.pop(len(ls) - ls[::-1].index(x) - 1)
+
 
 def remove_whitespace(string, leading=False, trailing=False):
     """Remove white space from a string.
@@ -133,11 +138,39 @@ def remove_whitespace(string, leading=False, trailing=False):
     # TODO need some way to get rid of extra spaces in e.g. text <span>   </span>  text
     return re.sub(r'\s+', ' ', string)
 
+
 def delete_paragraph(paragraph):
     # https://github.com/python-openxml/python-docx/issues/33#issuecomment-77661907
     p = paragraph._element
     p.getparent().remove(p)
     p._p = p._element = None
+
+
+def restart_numbering(p: Paragraph) -> Paragraph:
+    """Restart numbering for a paragraph, assuming it is a List Number (or similar) style.
+
+    Credit for this solution: # https://github.com/python-openxml/python-docx/pull/582#issuecomment-1717139576
+
+    Args:
+        p: The paragraph which should begin at 1.
+
+    Return: The same paragraph.
+    """
+    abstract_num_id = p.part.document.part.numbering_part.element.num_having_numId(
+        p.style.element.get_or_add_pPr().get_or_add_numPr().numId.val  # Should this be p.style.element or p.element?
+    ).abstractNumId.val
+
+    num = p.part.numbering_part.element.add_num(abstract_num_id)
+    num.add_lvlOverride(ilvl=0).add_startOverride(1)
+
+    p_pr = p._p.get_or_add_pPr()
+    num_pr = p_pr.get_or_add_numPr()
+    ilvl = num_pr.get_or_add_ilvl()
+    ilvl.val = int("0")
+    num_id = num_pr.get_or_add_numId()
+    num_id.val = int(num.numId)
+    return p
+
 
 font_styles = {
     'b': 'bold',
@@ -159,7 +192,7 @@ font_names = {
 
 class HtmlToDocx(HTMLParser):
 
-    def __init__(self):
+    def __init__(self, ul_style=None, ol_style=None):
         super().__init__()
         self.options = {
             'fix-html': True,
@@ -175,8 +208,8 @@ class HtmlToDocx(HTMLParser):
         ]
         self.table_style = DEFAULT_TABLE_STYLE
         self.paragraph_style = DEFAULT_PARAGRAPH_STYLE
-        self.ul_style = "List Bullet"
-        self.ol_style = "List Number"
+        self.ul_style = ul_style or "List Bullet"
+        self.ol_style = ol_style or "List Number"
 
     def set_initial_attrs(self, document=None):
         self.tags = {
@@ -201,6 +234,8 @@ class HtmlToDocx(HTMLParser):
         """Copy settings from another instance of HtmlToDocx"""
         self.table_style = other.table_style
         self.paragraph_style = other.paragraph_style
+        self.ul_style = other.ul_style
+        self.ol_style = other.ol_style
 
     def get_cell_html(self, soup):
         # Returns string of td element with opening and closing <td> tags removed
@@ -267,21 +302,30 @@ class HtmlToDocx(HTMLParser):
         return string_dict
 
     def handle_li(self):
+        should_restart_numbering = False
         # check list stack to determine style and depth
         list_depth = len(self.tags['list'])
         if list_depth:
             list_type = self.tags['list'][-1]
         else:
-            list_type = 'ul' # assign unordered if no tag
+            list_type = 'ul'  # assign unordered if no tag
 
         if list_type == 'ol':
             list_style = self.ol_style
+            # Restart numbering if previous paragraph style is not the same as self.ol_style
+            if len(self.doc.paragraphs) > 1:
+                previous_paragraph = self.doc.paragraphs[-1]
+                if previous_paragraph.style.name != self.ol_style:
+                    should_restart_numbering = True
+
         else:
             list_style = self.ul_style
 
         self.paragraph = self.doc.add_paragraph(style=list_style)            
         self.paragraph.paragraph_format.left_indent = Inches(min(list_depth * LIST_INDENT, MAX_INDENT))
         self.paragraph.paragraph_format.line_spacing = 1
+        if should_restart_numbering:
+            restart_numbering(self.paragraph)
 
     def add_image_to_cell(self, cell, image):
         # python-docx doesn't have method yet for adding images to table cells. For now we use this
@@ -660,6 +704,7 @@ class HtmlToDocx(HTMLParser):
         self.set_initial_attrs()
         self.run_process(html)
         return self.doc
+
 
 if __name__=='__main__':
     

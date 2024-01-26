@@ -1,4 +1,4 @@
-*.docx
+test.docx
 *.pyc
 
 venv
