@@ -192,7 +192,11 @@ font_names = {
 
 class HtmlToDocx(HTMLParser):
 
-    def __init__(self, ul_style=None, ol_style=None):
+    def __init__(self,
+                 ul_style="List Bullet",
+                 ol_style="List Number",
+                 table_style=DEFAULT_TABLE_STYLE,
+                 paragraph_style=DEFAULT_PARAGRAPH_STYLE):
         super().__init__()
         self.options = {
             'fix-html': True,
@@ -206,10 +210,10 @@ class HtmlToDocx(HTMLParser):
             'table > tbody > tr',
             'table > tfoot > tr'
         ]
-        self.table_style = DEFAULT_TABLE_STYLE
-        self.paragraph_style = DEFAULT_PARAGRAPH_STYLE
-        self.ul_style = ul_style or "List Bullet"
-        self.ol_style = ol_style or "List Number"
+        self.table_style = table_style
+        self.paragraph_style = paragraph_style
+        self.ul_style = ul_style
+        self.ol_style = ol_style
 
     def set_initial_attrs(self, document=None):
         self.tags = {
