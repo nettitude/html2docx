@@ -12,7 +12,7 @@ user can pass existing document object as arg
 
 How to deal with block level style applied over table elements? e.g. text align
 """
-import re, argparse
+import re, argparse, base64
 import io, os
 import urllib.request
 from urllib.parse import urlparse
@@ -90,13 +90,15 @@ def fetch_datauri( url ):
     # Take the most obvious cases currently
     if m.group(2) == 'base64':
       data = base64.b64decode( m.group(3) )
+      print( m.group(2) )
 
     elif m.group(2) == 'utf8':
       data = m.group(3)
 
     else:
       data = m.group(3)
-
+    
+    print( 'datauri', data )
     return io.BytesIO(data)
 
 
@@ -386,13 +388,9 @@ class HtmlToDocx(HTMLParser):
             except urllib.error.URLError:
                 image = None
         elif is_datauri( src ):
-            try:
-                image = fetch_datauri( src )
-            except Exception as e:
-                image = None
+            image = fetch_datauri( src )
         else:
             image = src
-        
         # add image to doc
         if image:
             try:
@@ -413,7 +411,6 @@ class HtmlToDocx(HTMLParser):
                     self.add_image_to_cell(self.doc, image)
             except FileNotFoundError:
                 image = None
-        
         if not image:
             if src_is_url:
                 self.doc.add_paragraph("<image: %s>" % src)
