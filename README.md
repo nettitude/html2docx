@@ -1,11 +1,11 @@
-# html3docx
+# html2docx
 A fork of https://github.com/pqzx/html2docx.  This version will focus on expedient changes for our particular use case.
 
 Dependencies: `python-docx` & `bs4`
 
 ### To install
 
-`pip install html3docx`
+`pip install html2docx`
 
 ### Improvements
 
