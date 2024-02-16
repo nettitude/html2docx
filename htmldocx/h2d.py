@@ -67,6 +67,37 @@ def fetch_image(url):
             return io.BytesIO(response.read())
     except urllib.error.URLError:
         return None
+        
+def is_datauri( url ):
+    """
+    Test if the URL is a data URI
+    """
+    # Groups:
+    # 1: mime type
+    # 2: encoding
+    # 3: data
+    m = re.search(r'^data:([0-9a-z/+]+);([=a-z0-9]+),(.+)', url, re.I )
+    if not m: return False
+    return True
+
+def fetch_datauri( url ):
+    """
+    Parse a data URI and return a bytes object
+    """
+    m = re.search(r'^data:([0-9a-z/+]+);([=a-z0-9]+),(.+)', url, re.I )
+    if not m: return False
+
+    # Take the most obvious cases currently
+    if m.group(2) == 'base64':
+      data = base64.b64decode( m.group(3) )
+
+    elif m.group(2) == 'utf8':
+      data = m.group(3)
+
+    else:
+      data = m.group(3)
+
+    return io.BytesIO(data)
 
 
 def remove_last_occurence(ls, x):
@@ -348,11 +379,15 @@ class HtmlToDocx(HTMLParser):
             return
 
         # fetch image
-        src_is_url = is_url(src)
-        if src_is_url:
+        if is_url(src):
             try:
                 image = fetch_image(src)
             except urllib.error.URLError:
+                image = None
+        elif is_datauri( src ):
+            try:
+                image = fetch_datauri( src )
+            except Exception as e:
                 image = None
         else:
             image = src
