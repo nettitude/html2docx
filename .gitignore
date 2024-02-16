@@ -6,3 +6,4 @@ venv
 .pytest_cache
 *.egg-info
 dist
+htmldocx/.h2d.py.swp
