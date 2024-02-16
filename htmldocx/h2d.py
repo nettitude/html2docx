@@ -392,6 +392,7 @@ class HtmlToDocx(HTMLParser):
                 image = None
         else:
             image = src
+        
         # add image to doc
         if image:
             try:
@@ -412,6 +413,7 @@ class HtmlToDocx(HTMLParser):
                     self.add_image_to_cell(self.doc, image)
             except FileNotFoundError:
                 image = None
+        
         if not image:
             if src_is_url:
                 self.doc.add_paragraph("<image: %s>" % src)
