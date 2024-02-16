@@ -379,7 +379,8 @@ class HtmlToDocx(HTMLParser):
             return
 
         # fetch image
-        if is_url(src):
+        src_is_url = is_url(src)
+        if src_is_url:
             try:
                 image = fetch_image(src)
             except urllib.error.URLError:
