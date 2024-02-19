@@ -90,7 +90,6 @@ def fetch_datauri( url ):
     # Take the most obvious cases currently
     if m.group(2) == 'base64':
       data = base64.b64decode( m.group(3) )
-      print( m.group(2) )
 
     elif m.group(2) == 'utf8':
       data = m.group(3)
@@ -98,7 +97,6 @@ def fetch_datauri( url ):
     else:
       data = m.group(3)
     
-    print( 'datauri', data )
     return io.BytesIO(data)
 
 
