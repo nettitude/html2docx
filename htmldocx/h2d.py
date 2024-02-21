@@ -338,6 +338,7 @@ class HtmlToDocx(HTMLParser):
 
     def handle_li(self):
         should_restart_numbering = False
+        
         # check list stack to determine style and depth
         list_depth = len(self.tags['list'])
         if list_depth:
@@ -389,6 +390,7 @@ class HtmlToDocx(HTMLParser):
             image = fetch_datauri( src )
         else:
             image = src
+        
         # add image to doc
         if image:
             try:
@@ -398,8 +400,10 @@ class HtmlToDocx(HTMLParser):
                     except:
                         attr_width = None
                     if attr_width is not None:
+                        
                         # Get horizontal dpi
                         dpi = Image.from_blob(image.read()).horz_dpi
+                        
                         # Convert pixels to inches
                         img_inch_width = Inches(attr_width / dpi)
                         self.doc.add_picture(image, width=img_inch_width)
@@ -526,9 +530,11 @@ class HtmlToDocx(HTMLParser):
             return
 
         self.tags[tag] = current_attrs
-        if tag in ['p', 'pre']:
+        if tag in ['p', 'pre', 'figcaption']:
             self.paragraph = self.doc.add_paragraph()
-            self.apply_paragraph_style()
+            if tag == 'figcaption': style = 'Caption'
+            else: style = None
+            self.apply_paragraph_style( style )
 
         elif tag == 'li':
             self.handle_li()
