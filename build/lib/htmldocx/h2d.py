@@ -12,7 +12,7 @@ user can pass existing document object as arg
 
 How to deal with block level style applied over table elements? e.g. text align
 """
-import re, argparse
+import re, argparse, base64
 import io, os
 import urllib.request
 from urllib.parse import urlparse
@@ -96,7 +96,7 @@ def fetch_datauri( url ):
 
     else:
       data = m.group(3)
-
+    
     return io.BytesIO(data)
 
 
@@ -338,6 +338,7 @@ class HtmlToDocx(HTMLParser):
 
     def handle_li(self):
         should_restart_numbering = False
+        
         # check list stack to determine style and depth
         list_depth = len(self.tags['list'])
         if list_depth:
@@ -379,18 +380,17 @@ class HtmlToDocx(HTMLParser):
             return
 
         # fetch image
-        if is_url(src):
+        src_is_url = is_url(src)
+        if src_is_url:
             try:
                 image = fetch_image(src)
             except urllib.error.URLError:
                 image = None
         elif is_datauri( src ):
-            try:
-                image = fetch_datauri( src )
-            except Exception as e:
-                image = None
+            image = fetch_datauri( src )
         else:
             image = src
+        
         # add image to doc
         if image:
             try:
@@ -400,8 +400,10 @@ class HtmlToDocx(HTMLParser):
                     except:
                         attr_width = None
                     if attr_width is not None:
+                        
                         # Get horizontal dpi
                         dpi = Image.from_blob(image.read()).horz_dpi
+                        
                         # Convert pixels to inches
                         img_inch_width = Inches(attr_width / dpi)
                         self.doc.add_picture(image, width=img_inch_width)
@@ -528,9 +530,11 @@ class HtmlToDocx(HTMLParser):
             return
 
         self.tags[tag] = current_attrs
-        if tag in ['p', 'pre']:
+        if tag in ['p', 'pre', 'figcaption']:
             self.paragraph = self.doc.add_paragraph()
-            self.apply_paragraph_style()
+            if tag == 'figcaption': style = 'Caption'
+            else: style = None
+            self.apply_paragraph_style( style )
 
         elif tag == 'li':
             self.handle_li()
