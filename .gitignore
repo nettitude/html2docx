@@ -1,5 +1,6 @@
 test.docx
 *.pyc
+*.swp
 
 venv
 .idea
