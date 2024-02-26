@@ -1,7 +1,6 @@
 # html2docx
-A fork of https://github.com/pqzx/html2docx.  This version will focus on expedient changes for our particular use case.
 
-Dependencies: `python-docx` & `bs4`
+A fork from <https://github.com/johnjor/html2docx> which was a fork from <https://github.com/pqzx/html2docx>.
 
 ### To install
 
@@ -13,6 +12,8 @@ Dependencies: `python-docx` & `bs4`
 - Images with a width attribute will be scaled according to that width.
 - Fix for AttributeError when handling a leading br tag, either at the top of the HTML snippet, or within a td or th cell.
 - Fix for IndexError when a table has more cells in latter rows than in the first row.
+- Ability to parse datauris in `img` `src`
+- `figcaption` elements are styled as `Caption`
 
 ## Original README
 
