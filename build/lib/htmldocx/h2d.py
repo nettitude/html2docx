@@ -222,12 +222,14 @@ font_names = {
 
 
 class HtmlToDocx(HTMLParser):
-
+    
     def __init__(self,
                  ul_style="List Bullet",
                  ol_style="List Number",
                  table_style=DEFAULT_TABLE_STYLE,
-                 paragraph_style=DEFAULT_PARAGRAPH_STYLE):
+                 paragraph_style=DEFAULT_PARAGRAPH_STYLE,
+                 debug=False
+                 ):
         super().__init__()
         self.options = {
             'fix-html': True,
@@ -245,6 +247,7 @@ class HtmlToDocx(HTMLParser):
         self.paragraph_style = paragraph_style
         self.ul_style = ul_style
         self.ol_style = ol_style
+        self.debug = debug
 
     def set_initial_attrs(self, document=None):
         self.tags = {
@@ -431,7 +434,8 @@ class HtmlToDocx(HTMLParser):
         """
         table_soup = self.tables[self.table_no]
         rows, cols = self.get_table_dimensions(table_soup)
-        self.table = self.doc.add_table(rows, cols)
+        # self.table = self.doc.add_table(rows, cols)
+        self.table = self.doc.add_table(0, cols)
 
         if self.table_style:
             try:
@@ -442,13 +446,17 @@ class HtmlToDocx(HTMLParser):
         rows = self.get_table_rows(table_soup)
         cell_row = 0
         for row in rows:
+            if self.debug: print('Table row:', cell_row, 'of', len(rows))
             cols = self.get_table_columns(row)
             cell_col = 0
+            r = self.table.add_row()
             for col in cols:
+                # docx_cell = self.table.cell(cell_row, cell_col)
+                docx_cell = r.cells[cell_col]
                 cell_html = self.get_cell_html(col)
+                # if self.debug: print( cell_html )
                 if col.name == 'th':
                     cell_html = "<b>%s</b>" % cell_html
-                docx_cell = self.table.cell(cell_row, cell_col)
                 child_parser = HtmlToDocx()
                 child_parser.copy_settings_from(self)
                 child_parser.add_html_to_cell(cell_html, docx_cell)
@@ -499,6 +507,7 @@ class HtmlToDocx(HTMLParser):
         self.paragraph._p.append(hyperlink)
 
     def handle_starttag(self, tag, attrs):
+        if self.debug: print('Start:',tag,attrs)
         if self.skip:
             return
         if tag == 'head':
@@ -590,6 +599,7 @@ class HtmlToDocx(HTMLParser):
             self.add_styles_to_paragraph(style)
 
     def handle_endtag(self, tag):
+        if self.debug: print('End:',tag)
         if self.skip:
             if not tag == self.skip_tag:
                 return
@@ -620,6 +630,8 @@ class HtmlToDocx(HTMLParser):
         # maybe set relevant reference to None?
 
     def handle_data(self, data):
+        if self.debug: print('Data:',data)
+      
         if self.skip:
             return
 
