@@ -741,7 +741,6 @@ class HtmlToDocx(HTMLParser):
         self.set_initial_attrs(cell)
         if not re.search(r'^<[^>]+>.*</[^>]+>$', html.strip()):
           html = '<span>' + html + '</span>'
-        print( 'Cell:', html )
         self.run_process(html)
         # cells must end with a paragraph or will get message about corrupt file
         # https://stackoverflow.com/a/29287121
